@@ -1,0 +1,61 @@
+---
+title: "Initial univariate mapping for DO mice"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(magrittr)
+```
+
+First, we load Rick's mapping objects.
+
+```{r}
+load("forFred_19Apr2022/fda_cross2_object_v8.Rdata")
+kinship <- readRDS("forFred_19Apr2022/fda_kinship_v8.rds")
+```
+
+Next, we fit a linear mixed effects model at every marker with `qtl2` R package. Initially, we don't insert additional pseudomarkers. We'll revisit this issue after seeing initial results.
+
+
+```{r}
+#prepare covar as numeric matrix
+ac <- as.matrix(as.numeric(fda$covar[, 3] == "F"))
+rownames(ac) <- rownames(fda$covar)
+apr_file <- "forFred_19Apr2022/fda_alleleprobs_v8.rds"
+if (!file.exists(apr_file)){
+    load("forFred_19Apr2022/fda_genoprobs_v8.Rdata") # object has name 'probs'
+    apr <- qtl2::genoprob_to_alleleprob(probs, cores = 1)
+    saveRDS(object = apr, file = apr_file)
+} else {
+    apr <- readRDS(apr_file)
+}
+```
+
+```{r}
+# scan1
+s1out <- qtl2::scan1(genoprobs = apr, 
+            pheno = fda$pheno[, c(5:8, 17), drop = FALSE],
+            kinship = kinship, 
+            #addcovar = ac, 
+            reml = TRUE, 
+            model = "normal", 
+            cores = 4
+            )
+```
+
+Plot `scan1` results
+
+```{r}
+qtl2::plot_scan1(s1out, fda$gmap, lodcolumn = 5)
+```
+
+
+## Session info
+
+```{r}
+devtools::session_info()
+```
